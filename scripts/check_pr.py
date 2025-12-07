@@ -2,7 +2,8 @@
 """
 HSP-Knowledge 記事投稿PR検証スクリプト
 
-記事のスパム判定、形式検証、更新時の検証を行います。
+記事の形式検証、更新時の検証を行います。
+スパム判定はGeminiが担当します。
 """
 
 import json
@@ -24,9 +25,8 @@ class ArticleValidator:
         self.issues: List[str] = []
 
     def validate(self) -> Dict:
-        """記事の総合的な検証を実施"""
+        """記事の形式検証を実施（スパム判定はGeminiが担当）"""
         result = {
-            "is_spam": False,
             "is_valid_format": True,
             "auto_approve": False,
             "issues": [],
@@ -57,17 +57,10 @@ class ArticleValidator:
         if not self._validate_body(body):
             result["is_valid_format"] = False
 
-        # スパム判定
-        if front_matter and body:
-            result["is_spam"] = self._detect_spam(front_matter, body)
-
         # 結果の集約
         result["issues"] = self.issues
-        # スパムでなく、形式が正しければ自動承認可能（軽微な問題は許容）
-        result["auto_approve"] = (
-            not result["is_spam"] 
-            and result["is_valid_format"]
-        )
+        # 形式が正しければ自動承認可能（スパム判定はGeminiが担当）
+        result["auto_approve"] = result["is_valid_format"]
 
         # サマリー生成
         result["summary"] = self._generate_summary(result)
@@ -190,62 +183,16 @@ class ArticleValidator:
 
         return True
 
-    def _detect_spam(self, front_matter: Dict, body: str) -> bool:
-        """スパム判定"""
-        # HSP関連キーワード
-        hsp_keywords = [
-            'hsp', 'hot soup processor', 'hsptv', 'onion software',
-            'hsp3', 'hsp2', 'hgimg', 'hspcv', 'hsp3dish',
-            '#include', '#module', '#deffunc', '#defcfunc',
-            'mes', 'button', 'input', 'objsize',
-        ]
-
-        content_lower = (str(front_matter) + body).lower()
-
-        # HSP関連キーワードが含まれているかチェック
-        has_hsp_keyword = any(keyword in content_lower for keyword in hsp_keywords)
-
-        if not has_hsp_keyword:
-            # HSPに全く無関係の可能性
-            spam_indicators = [
-                'viagra', 'casino', 'lottery', 'click here',
-                '今すぐ', '稼げる', '簡単に', '無料で',
-            ]
-
-            spam_count = sum(1 for indicator in spam_indicators if indicator in content_lower)
-
-            if spam_count >= 2:
-                return True
-
-        # 外部リンクが多すぎる
-        url_pattern = r'https?://[^\s)]+'
-        urls = re.findall(url_pattern, body)
-        if len(urls) > 10:
-            self.issues.append(f"外部リンクが多すぎます ({len(urls)}個)")
-            return True
-
-        # 意味のない文字列
-        if len(body) > 100:
-            # 同じ文字の繰り返しが多い
-            repeated_chars = re.findall(r'(.)\1{10,}', body)
-            if repeated_chars:
-                return True
-
-        return False
-
     def _generate_summary(self, result: Dict) -> str:
-        """判定結果のサマリーを生成"""
-        if result["is_spam"]:
-            return "スパムと判定されました。記事内容が不適切です。"
-
+        """判定結果のサマリーを生成（形式チェックのみ）"""
         if not result["is_valid_format"]:
             return f"形式に問題があります: {', '.join(self.issues)}"
 
         if result["auto_approve"]:
             if len(self.issues) == 0:
-                return "記事は適切です。形式も正しく、HSPに関連する有益な内容です。"
+                return "記事の形式は適切です。"
             else:
-                return f"記事は承認可能です。軽微な改善提案: {', '.join(self.issues)}"
+                return f"記事の形式は承認可能です。軽微な改善提案: {', '.join(self.issues)}"
 
         return f"要確認: {', '.join(self.issues)}"
 
@@ -266,7 +213,6 @@ def main():
     except Exception as e:
         print(json.dumps({
             "error": f"ファイルの読み込みに失敗: {str(e)}",
-            "is_spam": False,
             "is_valid_format": False,
             "auto_approve": False,
         }))
