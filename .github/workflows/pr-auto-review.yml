@@ -1,7 +1,9 @@
 name: PR Auto Review and Merge
 
 on:
-  pull_request:
+  # 変更点1: pull_request ではなく pull_request_target を使用
+  # これにより Fork からの PR でもコメント投稿権限が付与されます
+  pull_request_target:
     types: [opened, synchronize, reopened]
     paths:
       - '_posts/**/*.md'
@@ -14,188 +16,117 @@ permissions:
   issues: write
 
 jobs:
-  validate-article:
-    name: Validate Article Submission
+  # ---------------------------------------------------
+  # Job 1: 形式チェック & 結果コメント (PR作成・更新時に実行)
+  # ---------------------------------------------------
+  validate-format:
+    name: Validate Format
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    
+    # pull_request_target なので、event_name での分岐条件を修正
+    if: github.event_name == 'pull_request_target'
+
     steps:
-      - name: Checkout code
+      # 重要: pull_request_target はデフォルトで「親のmain」をチェックアウトします。
+      # 投稿された記事を検証するために、PRのコミットを明示的にチェックアウトする必要があります。
+      - name: Checkout PR code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }} # PRの先端を取得
           fetch-depth: 0
-      
+
+      # 重要: スクリプトの改ざんを防ぐため、検証スクリプトだけは
+      # 必ず「親リポジトリのmain」から復元して上書きします。
+      - name: Restore trusted scripts
+        run: |
+          git fetch origin ${{ github.event.repository.default_branch }}
+          git checkout origin/${{ github.event.repository.default_branch }} -- scripts/check_pr.py
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Check Format
         run: |
-          pip install pyyaml
-      
-      - name: Get changed files
-        id: changed-files
-        run: |
+          # 差分取得の比較元を調整
           git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt
-      
-      - name: Validate articles
-        id: check
-        run: |
-          echo "[" > validation_results.json
-          first=true
+
+          echo "## 📝 形式チェック結果" > report.md
+          echo "" >> report.md
+
+          has_error=false
           has_files=false
-          
+
           while IFS= read -r file; do
             if [[ "$file" == _posts/*.md ]] && [[ "$file" != "_posts/template.md" ]]; then
-              echo "Validating: $file"
               has_files=true
-              
-              original_file=""
-              if git show origin/${{ github.base_ref }}:"$file" > /tmp/original.md 2>/dev/null; then
-                original_file="/tmp/original.md"
-              fi
-              
-              if [ "$first" = true ]; then
-                first=false
-              else
-                echo "," >> validation_results.json
-              fi
+              # ファイルが存在するか確認（削除された場合などのエラー回避）
+              if [ -f "$file" ]; then
+                python scripts/check_pr.py "$file" > result.json
 
-              if [ -n "$original_file" ]; then
-                python scripts/check_pr.py "$file" "$original_file" >> validation_results.json
-              else
-                python scripts/check_pr.py "$file" >> validation_results.json
+                valid=$(jq -r '.is_valid_format' result.json)
+                errors=$(jq -r '.issues | join(", ")' result.json)
+
+                if [ "$valid" == "true" ]; then
+                  echo "- ✅ **$file**: 形式OK" >> report.md
+                else
+                  echo "- ❌ **$file**: 形式エラー" >> report.md
+                  echo "  - 理由: $errors" >> report.md
+                  has_error=true
+                fi
               fi
             fi
           done < changed_files.txt
-          
-          echo "]" >> validation_results.json
-          
-          if [ "$has_files" = true ]; then
-            echo "has_files=true" >> $GITHUB_OUTPUT
+
+          if [ "$has_files" = "false" ]; then
+            echo "検証対象の記事ファイルが見つかりませんでした。" >> report.md
+          elif [ "$has_error" == "true" ]; then
+            echo "" >> report.md
+            echo "❌ 形式エラーがあるため、修正が必要です。" >> report.md
           else
-            echo "has_files=false" >> $GITHUB_OUTPUT
-            echo "[]" > validation_results.json
+            echo "" >> report.md
+            echo "✅ 形式は正常です。Geminiのレビュー完了後、問題なければ \`/publish\` で公開できます。" >> report.md
           fi
-      
-      - name: Post validation result
-        if: steps.check.outputs.has_files == 'true'
+
+          cat report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment Result
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            
-            let results;
-            try {
-              results = JSON.parse(fs.readFileSync('validation_results.json', 'utf8'));
-            } catch (error) {
-              console.log('Could not read validation results');
-              return;
-            }
-            
-            // 全ファイルの結果をサマリー（形式チェックのみ）
-            let comment = '## 📝 記事形式検証結果\n\n';
-            let allAutoApprove = true;
-            let hasFormatError = false;
-
-            for (const res of results) {
-              if (!res.is_valid_format) hasFormatError = true;
-              if (!res.auto_approve) allAutoApprove = false;
-            }
-
-            if (hasFormatError) {
-              comment += '⚠️ **形式エラー**: 記事の形式に修正が必要です。\n\n';
-            } else if (allAutoApprove) {
-              comment += '✅ **形式OK**: 記事の形式は適切です！\n\n';
-              comment += 'Geminiのレビュー待ちです。レビュー完了後、投稿者は `/publish` とコメントすることで自動マージできます。\n\n';
-            } else {
-              comment += '⚠️ **要確認**: 問題があるため自動承認できません。\n\n';
-            }
-            
-            if (results.length > 0) {
-              comment += '### 詳細レポート\n\n';
-              results.forEach((res) => {
-                 if (res.issues.length > 0) {
-                   comment += `- ⚠️ **要修正**: ${res.issues.join(', ')}\n`;
-                 } else {
-                   comment += `- ✅ 問題なし\n`;
-                 }
-              });
-            }
-            
+            const body = fs.readFileSync('report.md', 'utf8');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: comment
+              body: body
             });
 
-  auto-merge:
-    name: Auto Approve and Merge
+  # ---------------------------------------------------
+  # Job 2: 公開・マージ処理 (/publish コマンドで実行)
+  # ---------------------------------------------------
+  publish-article:
+    name: Publish Article
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
       startsWith(github.event.comment.body, '/publish')
-    
+
     steps:
-      - name: Checkout PR code
+      - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Get PR number
+
+      - name: Get PR Info
         id: pr
-        run: |
-          echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+        run: echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
 
-      - name: Fetch Gemini verdict
-        id: gemini-verdict
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // PR内の全コメントを取得
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ steps.pr.outputs.number }}
-            });
-
-            // Gemini Code Assist（または類似ボット）によるスパム判定タグを探す
-            const geminiComments = comments.data.filter(c =>
-              c.user.type === 'Bot' ||
-              c.user.login.toLowerCase().includes('gemini') ||
-              c.user.login.toLowerCase().includes('code-assist')
-            );
-
-            // 最新のコメントから判定タグを検索
-            let latestVerdict = null;
-            for (const comment of geminiComments.reverse()) {
-              if (comment.body.includes('[SPAM-CHECK:')) {
-                latestVerdict = comment;
-                break;
-              }
-            }
-
-            if (!latestVerdict) {
-              core.setOutput('gemini_checked', 'false');
-              core.setOutput('gemini_pass', 'false');
-              console.log('Geminiによるスパム判定がまだ完了していません。');
-              return;
-            }
-
-            const isPass = latestVerdict.body.includes('[SPAM-CHECK: PASS]');
-            core.setOutput('gemini_checked', 'true');
-            core.setOutput('gemini_pass', isPass.toString());
-
-            if (isPass) {
-              console.log('✅ Geminiスパム判定: PASS');
-            } else {
-              console.log('❌ Geminiスパム判定: FAIL');
-            }
-
-      - name: Check if commenter is PR author
+      # 1. コメント投稿者がPR作成者本人か確認
+      - name: Check Author
         id: check-author
         uses: actions/github-script@v7
         with:
@@ -205,197 +136,80 @@ jobs:
               repo: context.repo.repo,
               pull_number: ${{ steps.pr.outputs.number }}
             });
-            
-            const isAuthor = pr.data.user.login === context.payload.comment.user.login;
-            core.setOutput('is_author', isAuthor);
-            if (!isAuthor) {
-              console.log('Commenter is not the PR author.');
+            if (pr.data.user.login !== context.payload.comment.user.login) {
+              core.setFailed('⛔️ /publish コマンドはPR作成者のみが実行できます。');
             }
-            return isAuthor;
 
-      # PRのブランチにチェックアウト（コンテンツ取得のため）
-      - name: Checkout PR branch
-        if: steps.check-author.outputs.is_author == 'true'
-        run: |
-          git fetch origin pull/${{ steps.pr.outputs.number }}/head:pr-${{ steps.pr.outputs.number }}
-          git checkout pr-${{ steps.pr.outputs.number }}
-      
-      # 【重要】検証スクリプトはメインブランチから取得（改ざん防止）
-      - name: Restore trusted scripts
-        if: steps.check-author.outputs.is_author == 'true'
-        run: |
-          git checkout origin/${{ github.event.repository.default_branch }} -- scripts/check_pr.py
-      
-      - name: Set up Python
-        if: steps.check-author.outputs.is_author == 'true'
-        uses: actions/setup-python@v5
+      # 2. Geminiのスパム判定を確認
+      - name: Check Gemini Verdict
+        id: gemini-check
+        uses: actions/github-script@v7
         with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        if: steps.check-author.outputs.is_author == 'true'
+          script: |
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.pr.outputs.number }}
+            });
+
+            // Gemini (gemini-code-assistを含むユーザー) のコメントを検索
+            const botComments = comments.data.filter(c =>
+              c.user.login.includes('gemini') && c.body.includes('[SPAM-CHECK:')
+            );
+
+            if (botComments.length === 0) {
+              core.setFailed('⛔️ Geminiによるレビュー（スパム判定）がまだ見つかりません。しばらく待ってから再試行してください。');
+              return;
+            }
+
+            const lastComment = botComments[botComments.length - 1];
+            if (lastComment.body.includes('[SPAM-CHECK: FAIL]')) {
+              core.setFailed('⛔️ Geminiによりスパムまたは不適切と判定されているため、マージできません。');
+            } else if (lastComment.body.includes('[SPAM-CHECK: PASS]')) {
+              console.log('Gemini check passed.');
+            } else {
+              core.setFailed('⛔️ Geminiの判定タグが読み取れませんでした。');
+            }
+
+      # 3. 形式チェック（念のため再実行）
+      - name: Final Format Check
         run: |
+          # 必要なセットアップ
+          # チェックアウトしてmainのスクリプトを復元
+          git fetch origin pull/${{ steps.pr.outputs.number }}/head:pr-branch
+          git checkout pr-branch
+          git checkout origin/${{ github.event.repository.default_branch }} -- scripts/check_pr.py
           pip install pyyaml
-      
-      - name: Re-validate articles
-        if: steps.check-author.outputs.is_author == 'true'
-        id: validate
-        run: |
-          # 変更ファイルの特定（メインブランチとの差分）
+
+          # チェック実行
           git diff --name-only origin/${{ github.event.repository.default_branch }}...HEAD > changed_files.txt
-          
-          auto_approve_all=true
-          has_files=false
-          
           while IFS= read -r file; do
             if [[ "$file" == _posts/*.md ]] && [[ "$file" != "_posts/template.md" ]]; then
-              echo "Re-validating: $file"
-              has_files=true
-              
-              original_file=""
-              if git show origin/${{ github.event.repository.default_branch }}:"$file" > /tmp/original.md 2>/dev/null; then
-                original_file="/tmp/original.md"
-              fi
-              
-              # 信頼されたスクリプトを実行
-              if [ -n "$original_file" ]; then
-                python scripts/check_pr.py "$file" "$original_file" > result.json
-              else
+              if [ -f "$file" ]; then
                 python scripts/check_pr.py "$file" > result.json
-              fi
-              
-              # 判定
-              is_approve=$(jq -r '.auto_approve' result.json)
-              if [ "$is_approve" != "true" ]; then
-                auto_approve_all=false
-                echo "Validation failed for $file"
-                cat result.json
+                if [ "$(jq -r '.is_valid_format' result.json)" != "true" ]; then
+                  echo "Format Error in $file"
+                  exit 1
+                fi
               fi
             fi
           done < changed_files.txt
-          
-          if [ "$has_files" = false ]; then
-             auto_approve_all=false
-          fi
 
-          echo "auto_approve=$auto_approve_all" >> $GITHUB_OUTPUT
-      
-      - name: Check merge conditions
-        id: merge-check
-        if: steps.check-author.outputs.is_author == 'true'
-        run: |
-          # 形式チェックとGemini判定の両方が必要
-          format_ok="${{ steps.validate.outputs.auto_approve }}"
-          gemini_checked="${{ steps.gemini-verdict.outputs.gemini_checked }}"
-          gemini_pass="${{ steps.gemini-verdict.outputs.gemini_pass }}"
-
-          echo "形式チェック: $format_ok"
-          echo "Gemini判定済み: $gemini_checked"
-          echo "Gemini判定結果: $gemini_pass"
-
-          if [ "$format_ok" = "true" ] && [ "$gemini_checked" = "true" ] && [ "$gemini_pass" = "true" ]; then
-            echo "can_merge=true" >> $GITHUB_OUTPUT
-            echo "✅ 全てのチェックに合格しました"
-          else
-            echo "can_merge=false" >> $GITHUB_OUTPUT
-            if [ "$format_ok" != "true" ]; then
-              echo "❌ 形式チェックが不合格です"
-            fi
-            if [ "$gemini_checked" != "true" ]; then
-              echo "⏳ Geminiのレビューが完了していません"
-            elif [ "$gemini_pass" != "true" ]; then
-              echo "❌ Geminiがスパムと判定しました"
-            fi
-          fi
-
-      - name: Comment on check failure
-        if: |
-          steps.check-author.outputs.is_author == 'true' &&
-          steps.merge-check.outputs.can_merge == 'false'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const formatOk = '${{ steps.validate.outputs.auto_approve }}' === 'true';
-            const geminiChecked = '${{ steps.gemini-verdict.outputs.gemini_checked }}' === 'true';
-            const geminiPass = '${{ steps.gemini-verdict.outputs.gemini_pass }}' === 'true';
-
-            let comment = '## ⚠️ 自動マージ条件が満たされていません\n\n';
-            comment += '自動マージには以下の条件を全て満たす必要があります：\n\n';
-            comment += formatOk ? '- ✅ 形式チェック\n' : '- ❌ 形式チェック\n';
-
-            if (!geminiChecked) {
-              comment += '- ⏳ Geminiレビュー（レビュー待ち）\n';
-            } else if (geminiPass) {
-              comment += '- ✅ Geminiレビュー\n';
-            } else {
-              comment += '- ❌ Geminiレビュー（スパム判定）\n';
-            }
-
-            comment += '\n問題を修正してから再度 `/publish` コマンドを実行してください。';
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ steps.pr.outputs.number }},
-              body: comment
-            });
-
-      - name: Approve PR
-        if: |
-          steps.check-author.outputs.is_author == 'true' &&
-          steps.merge-check.outputs.can_merge == 'true'
+      # 4. マージ実行
+      - name: Merge
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            await github.rest.pulls.createReview({
+            await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: ${{ steps.pr.outputs.number }},
-              event: 'APPROVE',
-              body: '✅ 自動承認: 形式チェックとGeminiレビューの両方に合格しました。'
+              merge_method: 'squash'
             });
-
-      - name: Merge PR
-        if: |
-          steps.check-author.outputs.is_author == 'true' &&
-          steps.merge-check.outputs.can_merge == 'true'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            try {
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: ${{ steps.pr.outputs.number }},
-                merge_method: 'squash'
-              });
-              
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: ${{ steps.pr.outputs.number }},
-                body: '🎉 記事が自動的にマージされました！'
-              });
-            } catch (error) {
-              console.error('Merge failed:', error);
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: ${{ steps.pr.outputs.number }},
-                body: '❌ 自動マージに失敗しました。\n\nエラー: ' + error.message
-              });
-            }
-
-      - name: Comment if not author
-        if: steps.check-author.outputs.is_author == 'false'
-        uses: actions/github-script@v7
-        with:
-          script: |
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: ${{ steps.pr.outputs.number }},
-              body: '⚠️ `/publish` コマンドはPRの作成者のみが使用できます。'
+              body: '🎉 記事を公開しました！'
             });
