@@ -17,8 +17,55 @@
     </div>
   </header>
 
-  <main class="site-main">
-    {{ content }}
+  <main class="site-main">      
+    <div class="layout-main">
+      <div class="main-column">
+        {{ content }}
+      </div>
+      <aside class="side-column">
+        <!-- このサイトについて -->
+        <div class="side-box">
+          <h3>📖 このサイトについて</h3>
+          <p>
+            HSP に関する記事をゆるく集める Qiita風の実験サイトです。<br>
+            チュートリアル・Tips・解説などを Markdown で管理しています。
+          </p>
+        </div>
+
+        <!-- 投稿マニュアル -->
+        <div class="side-box">
+          <h3>📚 投稿マニュアル</h3>
+          <ul class="side-article-list">
+            <li>
+              <a href="{{ '/2025/12/07/how-to-post' | relative_url }}">記事の投稿方法（How to post）</a>
+              <div class="side-post-date">{{ site.time | date: "%Y/%m/%d" }}</div>
+            </li>
+          </ul>
+        </div>
+        <div class="side-box">
+          <h3>🕒 最近の更新</h3>
+          <ul class="side-article-list">
+            {% assign recent_posts = site.posts | sort: 'date' | reverse | slice: 0, 5 %}
+            {% for post in recent_posts %}
+              <li>
+                <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+                <div class="side-post-date">{{ post.date | date: "%Y/%m/%d" }}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <!-- 関連リンク -->
+        <div class="side-box">
+          <h3>🔗 関連リンク</h3>
+          <ul class="side-link-list">
+            <li><a href="https://hsp.tv/" target="_blank" rel="noopener">HSP公式サイト</a></li>
+            <li><a href="https://hsp.moe/" target="_blank" rel="noopener">HSP開発wiki</a></li>
+            <li><a href="https://discord.gg/x3r3uUw" target="_blank" rel="noopener">HSP Discordサーバー</a></li>
+          </ul>
+        </div>
+      </aside>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -107,7 +154,9 @@
         copyButton.onclick = function() {
           const code = pre.querySelector('code');
           if (code) {
-            navigator.clipboard.writeText(code.textContent).then(() => {
+            // 行番号を除去してコピー
+            const textToCopy = code.textContent.split('\n').map(line => line.replace(/^\d+\s*/, '')).join('\n');
+            navigator.clipboard.writeText(textToCopy).then(() => {
               copyButton.textContent = 'コピー済';
               setTimeout(() => copyButton.textContent = 'コピー', 2000);
             });

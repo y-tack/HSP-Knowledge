@@ -215,7 +215,7 @@ a:hover {
 /* レイアウト全体 */
 .layout-main {
   display: flex;
-  gap: 24px;
+  gap: 20px;
 }
 
 /* メインカラムとサイドバー */
@@ -225,7 +225,7 @@ a:hover {
 }
 
 .side-column {
-  flex: 0 0 260px;
+  flex: 0 0 280px;
 }
 
 /* サイドバーのボックス */
@@ -246,6 +246,13 @@ a:hover {
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.side-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
 }
 
 .side-tag-list {
@@ -324,6 +331,110 @@ a:hover {
 
 .post-secondary-link {
   font-size: 14px;
+}
+
+/* サイドバーの記事リスト */
+.side-article-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.side-article-list li {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.side-article-list li:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.side-article-list a {
+  display: block;
+  text-decoration: none;
+  color: #1a73e8;
+  line-height: 1.4;
+}
+
+.side-article-list a:hover {
+  text-decoration: underline;
+}
+
+.side-post-date {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* サイドバーのタグクラウド */
+.side-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.side-tag-item {
+  display: inline-block;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #1a73e8;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.side-tag-item:hover {
+  background: #dce4ff;
+  text-decoration: none;
+}
+
+/* サイドバーのカテゴリリスト */
+.side-category-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.side-category-list li {
+  margin-bottom: 6px;
+}
+
+.side-category-list a {
+  text-decoration: none;
+  color: #333;
+}
+
+.side-category-list a:hover {
+  color: #1a73e8;
+  text-decoration: underline;
+}
+
+/* サイドバーのリンクリスト */
+.side-link-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.side-link-list li {
+  margin-bottom: 6px;
+}
+
+.side-link-list a {
+  text-decoration: none;
+  color: #333;
+}
+
+.side-link-list a:hover {
+  color: #1a73e8;
+  text-decoration: underline;
 }
 
 /* レスポンシブデザイン */

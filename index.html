@@ -63,29 +63,6 @@ title: HSP-Knowledge
     </ul>
   </div>
 
-  <aside class="side-column">
-    <section class="side-box">
-      <h3>このサイトについて</h3>
-      <p>
-        HSP に関する記事をゆるく集める Qiita風の実験サイトです。<br>
-        チュートリアル・Tips・解説などを Markdown で管理しています。
-      </p>
-    </section>
-
-    <section class="side-box">
-      <h3>タグ一覧</h3>
-      <ul class="side-tag-list">
-        {% assign tags = site.tags | sort %}
-        {% for tag in tags %}
-        <li>
-          <a href="{{ '/?tag=' | append: tag[0] | relative_url }}">
-            {{ tag[0] }} <span class="tag-count">({{ tag[1].size }})</span>
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </section>
-  </aside>
 
 </div>
 
