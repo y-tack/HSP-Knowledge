@@ -7,11 +7,23 @@ title: HSP-Knowledge
 
   <!-- メインカラム: 記事一覧 -->
   <div class="main-column">
+
+    <!-- 追加: 検索フォーム -->
+    <div class="search-box">
+      <input
+        type="search"
+        id="post-search"
+        placeholder="記事を検索（タイトル・概要・タグ）"
+        autocomplete="off">
+    </div>
+
     <h2>記事一覧</h2>
 
-    <ul class="post-list">
+    <ul class="post-list" id="post-list">
       {% for post in site.posts %}
-      <li class="post-card">
+      <li class="post-card"
+          data-title="{{ post.title | escape }}"
+          data-tags="{% if post.tags %}{{ post.tags | join: ' ' | escape }}{% endif %}">
         <h3 class="post-title">
           <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
         </h3>
@@ -68,3 +80,42 @@ title: HSP-Knowledge
   </aside>
 
 </div>
+
+<!-- 追加: 検索用スクリプト -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var input = document.getElementById('post-search');
+  var list = document.getElementById('post-list');
+  if (!input || !list) return;
+
+  var items = Array.prototype.slice.call(list.querySelectorAll('.post-card'));
+
+  function normalize(text) {
+    return (text || '').toLowerCase();
+  }
+
+  input.addEventListener('input', function () {
+    var q = normalize(input.value);
+
+    items.forEach(function (item) {
+      if (!q) {
+        item.style.display = '';
+        return;
+      }
+
+      var title = normalize(item.getAttribute('data-title'));
+      var tags  = normalize(item.getAttribute('data-tags'));
+      var summary = normalize(
+        item.querySelector('.post-summary')?.textContent || ''
+      );
+
+      var hit =
+        title.indexOf(q) !== -1 ||
+        tags.indexOf(q) !== -1 ||
+        summary.indexOf(q) !== -1;
+
+      item.style.display = hit ? '' : 'none';
+    });
+  });
+});
+</script>

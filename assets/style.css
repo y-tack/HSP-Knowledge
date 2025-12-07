@@ -196,3 +196,15 @@ a:hover {
   font-size: 11px;
   margin-left: 4px;
 }
+
+.search-box {
+  margin-bottom: 12px;
+}
+
+#post-search {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
