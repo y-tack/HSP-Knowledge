@@ -61,22 +61,36 @@ jobs:
           has_files=false
 
           while IFS= read -r file; do
-            if [[ "$file" == _posts/*.md ]] && [[ "$file" != "_posts/template.md" ]]; then
-              has_files=true
-              # ファイルが存在するか確認（削除された場合などのエラー回避）
-              if [ -f "$file" ]; then
-                python scripts/check_pr.py "$file" > result.json
+            # --- 🛡️ セキュリティチェック追加 ---
+            # 1) ホワイトリスト: `_posts/` 配下の .md 以外の変更が含まれていればエラー
+            if [[ "$file" != _posts/*.md ]]; then
+              echo "- ❌ **$file**: システム保護のため、\`_posts/\` 以外のファイル変更を含むPRは自動承認できません。" >> report.md
+              has_error=true
+              continue
+            fi
 
-                valid=$(jq -r '.is_valid_format' result.json)
-                errors=$(jq -r '.issues | join(", ")' result.json)
+            # 2) テンプレートファイルの変更は禁止
+            if [[ "$file" == "_posts/template.md" ]]; then
+              echo "- ❌ **$file**: テンプレートファイルの変更は禁止されています。" >> report.md
+              has_error=true
+              continue
+            fi
+            # ------------------------------------
 
-                if [ "$valid" == "true" ]; then
-                  echo "- ✅ **$file**: 形式OK" >> report.md
-                else
-                  echo "- ❌ **$file**: 形式エラー" >> report.md
-                  echo "  - 理由: $errors" >> report.md
-                  has_error=true
-                fi
+            has_files=true
+            # ファイルが存在するか確認（削除された場合などのエラー回避）
+            if [ -f "$file" ]; then
+              python scripts/check_pr.py "$file" > result.json
+
+              valid=$(jq -r '.is_valid_format' result.json)
+              errors=$(jq -r '.issues | join(", ")' result.json)
+
+              if [ "$valid" == "true" ]; then
+                echo "- ✅ **$file**: 形式OK" >> report.md
+              else
+                echo "- ❌ **$file**: 形式エラー" >> report.md
+                echo "  - 理由: $errors" >> report.md
+                has_error=true
               fi
             fi
           done < changed_files.txt
@@ -85,7 +99,7 @@ jobs:
             echo "検証対象の記事ファイルが見つかりませんでした。" >> report.md
           elif [ "$has_error" == "true" ]; then
             echo "" >> report.md
-            echo "❌ 形式エラーがあるため、修正が必要です。" >> report.md
+            echo "❌ エラーがあるため、修正が必要です。" >> report.md
           else
             echo "" >> report.md
             echo "✅ 形式は正常です。Geminiのレビュー完了後、問題なければ \`/publish\` で公開できます。" >> report.md
