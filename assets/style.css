@@ -441,22 +441,37 @@ a:hover {
 .post-edit-controls {
   margin-bottom: 12px;
   text-align: right;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .edit-button {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 8px 16px;
   border-radius: 6px;
   background: #1a73e8;
   color: #fff;
   font-size: 14px;
   text-decoration: none;
+  border: none;
+  cursor: pointer;
   transition: background 0.2s;
 }
 
 .edit-button:hover {
   background: #1558ad;
   text-decoration: none;
+}
+
+.edit-button-secondary {
+  background: #6c757d;
+}
+
+.edit-button-secondary:hover {
+  background: #5a6268;
 }
 
 /* レスポンシブデザイン */

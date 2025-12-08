@@ -1,0 +1,383 @@
+---
+layout: default
+title: 新規記事を作成
+---
+
+<style>
+.edit-page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.edit-header {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.edit-header h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.edit-header p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.edit-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.edit-controls button,
+.edit-controls a {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.save-button {
+  background: #28a745;
+  color: #fff;
+}
+
+.save-button:hover {
+  background: #218838;
+}
+
+.cancel-button {
+  background: #6c757d;
+  color: #fff;
+}
+
+.cancel-button:hover {
+  background: #5a6268;
+  text-decoration: none;
+}
+
+.editor-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+#editor {
+  min-height: 600px;
+}
+
+/* Toast UI Editor日本語フォント設定 */
+.toastui-editor-defaultUI,
+.toastui-editor-md-container,
+.toastui-editor-ww-container {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif !important;
+}
+
+.toastui-editor-contents {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif !important;
+}
+
+.ProseMirror {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif !important;
+}
+
+.metadata-editor {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+}
+
+.metadata-editor h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #495057;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.metadata-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.metadata-field label {
+  font-size: 12px;
+  font-weight: bold;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.metadata-field input,
+.metadata-field textarea {
+  padding: 8px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.metadata-field input:focus,
+.metadata-field textarea:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+.metadata-field.full-width {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .metadata-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<div class="edit-page-container">
+  <div class="edit-header">
+    <h2>✨ 新規記事を作成</h2>
+    <p>記事の情報を入力して、WYSIWYGエディタで本文を書きましょう</p>
+  </div>
+
+  <div class="edit-controls">
+    <button id="save-button" class="save-button">
+      💾 GitHubで保存
+    </button>
+    <a href="{{ '/' | relative_url }}" class="cancel-button">
+      ❌ キャンセル
+    </a>
+  </div>
+
+  <div class="editor-container">
+    <!-- メタデータエディタ -->
+    <div class="metadata-editor">
+      <h3>📋 記事情報</h3>
+      <div class="metadata-grid">
+        <div class="metadata-field full-width">
+          <label for="meta-filename">ファイル名（英数字、ハイフン、アンダースコアのみ）</label>
+          <input type="text" id="meta-filename" placeholder="例: my-first-article">
+          <small style="color: #666; font-size: 11px; margin-top: 4px;">※ 日付とmdは自動付与されます（例: 2025-12-09-my-first-article.md）</small>
+        </div>
+        <div class="metadata-field">
+          <label for="meta-title">タイトル <span style="color: red;">*</span></label>
+          <input type="text" id="meta-title" placeholder="記事のタイトル">
+        </div>
+        <div class="metadata-field">
+          <label for="meta-author">著者 <span style="color: red;">*</span></label>
+          <input type="text" id="meta-author" placeholder="著者名">
+        </div>
+        <div class="metadata-field full-width">
+          <label for="meta-tags">タグ（推奨タグから選択 + 自由に追加可）<span style="color: red;">*</span></label>
+          <div style="background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 3px; margin: 5px 0;">
+            <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>🎯 対象分野</strong></p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="HSP3" style="margin-right: 5px;"> HSP3</label>
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="ゲーム制作" style="margin-right: 5px;"> ゲーム制作</label>
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="3D" style="margin-right: 5px;"> 3D</label>
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="ライブラリ" style="margin-right: 5px;"> ライブラリ</label>
+            </div>
+
+            <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>📚 コンテンツタイプ</strong></p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="Tips" style="margin-right: 5px;"> Tips</label>
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="デバッグ" style="margin-right: 5px;"> デバッグ</label>
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="作品紹介" style="margin-right: 5px;"> 作品紹介</label>
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="募集" style="margin-right: 5px;"> 募集</label>
+            </div>
+
+            <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>📖 難易度</strong></p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="入門" style="margin-right: 5px;"> 入門</label>
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="中級" style="margin-right: 5px;"> 中級</label>
+              <label style="display: flex; align-items: center;"><input type="checkbox" name="meta-tag" value="応用" style="margin-right: 5px;"> 応用</label>
+            </div>
+          </div>
+          <label style="display: block; margin-top: 8px; font-size: 13px; color: #666;">カスタムタグ（カンマ区切り）:</label>
+          <input type="text" id="meta-custom-tags" placeholder="例: 最適化, 初心者向け"
+                 style="width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
+          <small style="color: #666; font-size: 11px;">推奨タグ以外のタグを追加したい場合は、ここにカンマで区切って入力してください。</small>
+        </div>
+        <div class="metadata-field full-width">
+          <label for="meta-summary">概要 <span style="color: red;">*</span></label>
+          <textarea id="meta-summary" rows="2" placeholder="記事の概要"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 本文エディタ -->
+    <div id="editor"></div>
+  </div>
+</div>
+
+<!-- Toast UI Editor -->
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Toast UI Editorを初期化
+  const editor = new toastui.Editor({
+    el: document.querySelector('#editor'),
+    height: '600px',
+    initialEditType: 'wysiwyg',
+    previewStyle: 'vertical',
+    initialValue: '## はじめに\n\nここに記事の本文を書いてください。',
+    language: 'ja-JP',
+    toolbarItems: [
+      ['heading', 'bold', 'italic', 'strike'],
+      ['hr', 'quote'],
+      ['ul', 'ol', 'task', 'indent', 'outdent'],
+      ['table', 'link', 'image'],
+      ['code', 'codeblock'],
+      ['scrollSync'],
+    ],
+    hooks: {
+      addImageBlobHook: (blob, callback) => {
+        alert('画像は直接GitHubにアップロードしてください。');
+        callback('', '');
+      }
+    }
+  });
+
+  // 保存ボタンの処理
+  document.getElementById('save-button').addEventListener('click', async function() {
+    const bodyContent = editor.getMarkdown();
+
+    // メタデータを取得
+    const filename = document.getElementById('meta-filename').value.trim();
+    const title = document.getElementById('meta-title').value.trim();
+    const author = document.getElementById('meta-author').value.trim();
+    const summary = document.getElementById('meta-summary').value.trim();
+
+    // タグを収集（チェックボックス + カスタムタグ）
+    const selectedTags = [];
+    document.querySelectorAll('input[name="meta-tag"]:checked').forEach(cb => {
+      selectedTags.push(cb.value);
+    });
+    const customTags = document.getElementById('meta-custom-tags').value.trim();
+    if (customTags) {
+      customTags.split(',').forEach(tag => {
+        const trimmed = tag.trim();
+        if (trimmed) selectedTags.push(trimmed);
+      });
+    }
+
+    // バリデーション
+    if (!filename) {
+      alert('ファイル名を入力してください。');
+      return;
+    }
+
+    // ファイル名の検証
+    const filenameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!filenameRegex.test(filename)) {
+      alert('ファイル名は英数字、ハイフン（-）、アンダースコア（_）のみ使用できます。');
+      return;
+    }
+
+    if (!title || !author || !summary) {
+      alert('タイトル、著者、概要は必須です。');
+      return;
+    }
+
+    if (!bodyContent.trim()) {
+      alert('本文が空です。');
+      return;
+    }
+
+    if (selectedTags.length === 0) {
+      alert('最低1つ以上のタグを選択してください。');
+      return;
+    }
+
+    // 現在の日付を取得
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateStr = year + '-' + month + '-' + day;
+
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const datetimeStr = dateStr + ' ' + hours + ':' + minutes + ':' + seconds + ' +09:00';
+
+    // ファイル名を生成
+    const fullFilename = dateStr + '-' + filename + '.md';
+
+    // Front Matterを生成
+    let frontMatter = '---\n';
+    frontMatter += 'layout: post\n';
+    frontMatter += 'title: ' + title + '\n';
+    frontMatter += 'date: ' + datetimeStr + '\n';
+    frontMatter += 'author: ' + author + '\n';
+    frontMatter += 'tags: [' + selectedTags.join(', ') + ']\n';
+    frontMatter += 'summary: ' + summary + '\n';
+    frontMatter += '---\n\n';
+
+    // 完全なMarkdownを生成
+    const fullContent = frontMatter + bodyContent;
+
+    // クリップボードにコピー
+    try {
+      await navigator.clipboard.writeText(fullContent);
+
+      // GitHubの新規作成URLを生成
+      const githubNewUrl = `https://github.com/Velgail/HSP-Knowledge/new/main/_posts?filename=${encodeURIComponent(fullFilename)}`;
+
+      // 確認ダイアログ
+      if (confirm('✅ 記事の内容をクリップボードにコピーしました！\n\nGitHubの新規作成ページを開きますので、エディタ内で Ctrl+V（ペースト）してください。\n\nファイル名: ' + fullFilename)) {
+        const newWindow = window.open(githubNewUrl, '_blank');
+
+        // ポップアップブロック対策
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          // ポップアップがブロックされた場合
+          const fallbackLink = document.createElement('a');
+          fallbackLink.href = githubNewUrl;
+          fallbackLink.target = '_blank';
+          fallbackLink.textContent = 'GitHubの新規作成ページを開く';
+          fallbackLink.style.cssText = 'display: inline-block; padding: 12px 24px; background: #1a73e8; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px;';
+
+          const message = document.createElement('div');
+          message.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 32px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 10000; text-align: center;';
+          message.innerHTML = '<p style="margin: 0 0 16px; font-size: 16px;">⚠️ ポップアップがブロックされました</p><p style="margin: 0 0 16px; color: #666;">以下のリンクをクリックしてGitHubを開いてください</p>';
+          message.appendChild(fallbackLink);
+
+          const overlay = document.createElement('div');
+          overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999;';
+          overlay.onclick = function() {
+            document.body.removeChild(overlay);
+            document.body.removeChild(message);
+          };
+
+          document.body.appendChild(overlay);
+          document.body.appendChild(message);
+        }
+      }
+    } catch (err) {
+      alert('⚠️ クリップボードへのコピーに失敗しました。\nブラウザの設定を確認してください。\n\nエラー: ' + err.message);
+      console.error('クリップボードエラー:', err);
+    }
+  });
+});
+</script>

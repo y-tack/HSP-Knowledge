@@ -3,124 +3,257 @@ layout: default
 title: 記事を投稿する
 ---
 
-<h2>記事を投稿する</h2>
+<style>
+.post-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 32px 0;
+}
+
+.post-option-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.post-option-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.post-option-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.post-option-card h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: #333;
+}
+
+.post-option-card p {
+  margin: 0 0 20px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.post-option-button {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 6px;
+  background: #1a73e8;
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.post-option-button:hover {
+  background: #1558ad;
+  text-decoration: none;
+}
+
+.post-option-button.secondary {
+  background: #6c757d;
+}
+
+.post-option-button.secondary:hover {
+  background: #5a6268;
+}
+
+.help-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 24px;
+  margin-top: 32px;
+  border-left: 4px solid #1a73e8;
+}
+
+.help-section h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.help-section p {
+  margin: 0;
+  color: #666;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .post-options {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<h2>📝 記事を投稿する</h2>
 
 <p>
-  このサイトへの記事投稿は、今のところ次の 2 通りで受け付けます。
+  HSP-Knowledgeへの記事投稿は、GitHubアカウントをお持ちの方なら誰でも可能です。<br>
+  以下の方法からお選びください。
 </p>
 
-<h3>投稿方法 1（おすすめ）：GitHub から直接記事を書く</h3>
-
-<p>
-  GitHub アカウントをお持ちの方は、下記のフォームに記事情報を入力して、
-  <code>_posts</code> フォルダに新しい記事ファイルを作成できます。
-</p>
-
-<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-  <h4>📝 新規記事フォーム</h4>
-
-  <div style="margin: 10px 0;">
-    <label for="filename-input"><strong>ファイル名</strong> （英数字・ハイフン・アンダースコアのみ、例: my-first-article）:</label><br>
-    <input type="text" id="filename-input" placeholder="my-first-article" style="width: 100%; max-width: 500px; padding: 8px; margin: 5px 0; box-sizing: border-box;">
-    <small style="color: #666;"><br />※ .md 拡張子は自動付与されます。日付はシステムが自動設定します。</small>
+<div class="post-options">
+  <!-- 新規作成 -->
+  <div class="post-option-card">
+    <div class="post-option-icon">✨</div>
+    <h3>WYSIWYGエディタで作成</h3>
+    <p>
+      直感的なエディタで記事を執筆できます。<br>
+      Wordのように簡単に記事を書けるのでおすすめです。
+    </p>
+    <a href="{{ '/new' | relative_url }}" class="post-option-button">
+      新規記事を作成
+    </a>
   </div>
 
-  <div style="margin: 10px 0;">
-    <label for="title-input"><strong>タイトル</strong> （記事のタイトル）:</label><br>
-    <input type="text" id="title-input" placeholder="HSP で簡単な計算機を作る" style="width: 100%; max-width: 500px; padding: 8px; margin: 5px 0; box-sizing: border-box;">
-  </div>
-
-  <div style="margin: 10px 0;">
-    <label for="author-input"><strong>著者名</strong> （ペンネーム等）:</label><br>
-    <input type="text" id="author-input" placeholder="******" style="width: 100%; max-width: 500px; padding: 8px; margin: 5px 0; box-sizing: border-box;">
-  </div>
-
-  <div style="margin: 10px 0;">
-    <label for="summary-input"><strong>概要</strong> :</label><br>
-    <textarea id="summary-input" placeholder="この記事では、HSPの基本的な機能を使って簡単な計算機を作る方法を紹介します。" style="width: 100%; max-width: 500px; height: 80px; padding: 8px; margin: 5px 0; box-sizing: border-box;"></textarea>
-  </div>
-
-  <div style="margin: 10px 0;">
-    <label><strong>タグ</strong> （推奨タグから選択 + 自由に追加可）:</label><br>
-    <div style="background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 3px; margin: 5px 0; max-width: 500px;">
-
-      <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>🎯 対象分野</strong></p>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="HSP3" style="margin-right: 5px;"> HSP3</label>
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="ゲーム制作" style="margin-right: 5px;"> ゲーム制作</label>
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="3D" style="margin-right: 5px;"> 3D</label>
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="ライブラリ" style="margin-right: 5px;"> ライブラリ</label>
-      </div>
-
-      <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>📚 コンテンツタイプ</strong></p>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="Tips" style="margin-right: 5px;"> Tips</label>
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="デバッグ" style="margin-right: 5px;"> デバッグ</label>
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="作品紹介" style="margin-right: 5px;"> 作品紹介</label>
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="募集" style="margin-right: 5px;"> 募集</label>
-      </div>
-
-      <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>📖 難易度</strong></p>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="入門" style="margin-right: 5px;"> 入門</label>
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="中級" style="margin-right: 5px;"> 中級</label>
-        <label style="display: flex; align-items: center;"><input type="checkbox" name="tag" value="応用" style="margin-right: 5px;"> 応用</label>
-      </div>
+  <!-- GitHub直接作成 -->
+  <div class="post-option-card">
+    <div class="post-option-icon">
+      <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
     </div>
-    <label style="display: block; margin-top: 8px;">カスタムタグ（カンマ区切り）:</label>
-    <input type="text" id="custom-tags-input" placeholder="例: 最適化, 初心者向け" style="width: 100%; max-width: 500px; padding: 8px; margin: 5px 0; box-sizing: border-box;">
-    <small style="color: #666;">推奨タグ以外のタグを追加したい場合は、ここにカンマで区切って入力してください。</small>
+    <h3>GitHubで直接作成</h3>
+    <p>
+      GitHubのエディタで直接Markdownを書きます。<br>
+      Markdown に慣れている方向けです。
+    </p>
+    <button id="show-github-form-btn" class="post-option-button secondary">
+      GitHubで作成
+    </button>
   </div>
-
-  <button id="post-button" class="post-primary-button">GitHub で新しい記事を作成</button>
 </div>
 
-<ul>
-  <li>ファイル名は英数字、ハイフン（<code>-</code>）、アンダースコア（<code>_</code>）のみ使用できます。</li>
-  <li>日付（<code>date</code>）と更新日時（<code>lastupdate</code>）は自動設定されます。</li>
-  <li>公開後は `/publish` コマンドで自動マージされます。</li>
-  <li>全ての要素は記事作成画面でも追加編集可能です</li>
-</ul>
+<!-- GitHub直接作成用のフォーム（初期非表示） -->
+<div id="github-form" style="display: none; margin-top: 32px;">
+  <div style="background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+    <h3 style="margin: 0 0 16px;">📋 記事情報を入力</h3>
 
-<hr>
+    <div style="display: grid; gap: 12px;">
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: bold; color: #666; margin-bottom: 4px;">
+          ファイル名（英数字・ハイフン・アンダースコアのみ）
+        </label>
+        <input type="text" id="gh-filename" placeholder="例: my-first-article"
+               style="width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+        <small style="color: #666; font-size: 11px;">※ 日付と.mdは自動付与されます</small>
+      </div>
 
-<h3>投稿方法 2：Discussion で記事案を投げる</h3>
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: bold; color: #666; margin-bottom: 4px;">
+          タイトル
+        </label>
+        <input type="text" id="gh-title" placeholder="記事のタイトル"
+               style="width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+      </div>
 
-<p>
-  GitHub に慣れていない方は、次の Discussion カテゴリに
-  「記事にしたい内容」を書き込んでください。こちらで Markdown 化して取り込みます。
-</p>
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: bold; color: #666; margin-bottom: 4px;">
+          著者
+        </label>
+        <input type="text" id="gh-author" placeholder="著者名"
+               style="width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+      </div>
 
-<p>
-  <a class="post-secondary-link"
-     href="https://github.com/Velgail/Hsp-Knowledge/discussions/categories/投稿受付">
-    Discussion に記事案を投稿する
-  </a>
-</p>
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: bold; color: #666; margin-bottom: 4px;">
+          タグ（推奨タグから選択 + 自由に追加可）
+        </label>
+        <div style="background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 3px; margin: 5px 0;">
+          <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>🎯 対象分野</strong></p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="HSP3" style="margin-right: 5px;"> HSP3</label>
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="ゲーム制作" style="margin-right: 5px;"> ゲーム制作</label>
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="3D" style="margin-right: 5px;"> 3D</label>
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="ライブラリ" style="margin-right: 5px;"> ライブラリ</label>
+          </div>
 
-<p>
-  書いてもらえると助かる項目：
-</p>
+          <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>📚 コンテンツタイプ</strong></p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="Tips" style="margin-right: 5px;"> Tips</label>
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="デバッグ" style="margin-right: 5px;"> デバッグ</label>
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="作品紹介" style="margin-right: 5px;"> 作品紹介</label>
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="募集" style="margin-right: 5px;"> 募集</label>
+          </div>
 
-<ul>
-  <li>記事タイトル（仮でOK）</li>
-  <li>ペンネーム</li>
-  <li>対象バージョン（例：HSP3.6）</li>
-  <li>対象レベル（入門 / 中級 など）</li>
-  <li>本文、または自分のブログ記事 URL</li>
-</ul>
+          <p style="font-size: 12px; color: #666; margin: 5px 0;"><strong>📖 難易度</strong></p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="入門" style="margin-right: 5px;"> 入門</label>
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="中級" style="margin-right: 5px;"> 中級</label>
+            <label style="display: flex; align-items: center;"><input type="checkbox" name="gh-tag" value="応用" style="margin-right: 5px;"> 応用</label>
+          </div>
+        </div>
+        <label style="display: block; margin-top: 8px; font-size: 13px; color: #666;">カスタムタグ（カンマ区切り）:</label>
+        <input type="text" id="gh-custom-tags" placeholder="例: 最適化, 初心者向け"
+               style="width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+        <small style="color: #666; font-size: 11px;">推奨タグ以外のタグを追加したい場合は、ここにカンマで区切って入力してください。</small>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: bold; color: #666; margin-bottom: 4px;">
+          概要
+        </label>
+        <textarea id="gh-summary" placeholder="記事の概要" rows="2"
+                  style="width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button id="gh-create-btn" class="post-option-button" style="flex: 1;">
+          GitHubで作成
+        </button>
+        <button id="gh-cancel-btn" class="post-option-button secondary" style="flex: 0;">
+          キャンセル
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  var button = document.getElementById('post-button');
-  if (!button) return;
+document.addEventListener('DOMContentLoaded', function() {
+  const showFormBtn = document.getElementById('show-github-form-btn');
+  const githubForm = document.getElementById('github-form');
+  const createBtn = document.getElementById('gh-create-btn');
+  const cancelBtn = document.getElementById('gh-cancel-btn');
 
-  button.addEventListener('click', function() {
-    // フォーム入力値を取得
-    var filename = document.getElementById('filename-input').value.trim();
-    var title = document.getElementById('title-input').value.trim();
-    var author = document.getElementById('author-input').value.trim();
-    var summary = document.getElementById('summary-input').value.trim();
+  // フォームを表示
+  showFormBtn.addEventListener('click', function() {
+    githubForm.style.display = 'block';
+    githubForm.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // キャンセル
+  cancelBtn.addEventListener('click', function() {
+    githubForm.style.display = 'none';
+  });
+
+  // GitHub作成
+  createBtn.addEventListener('click', function() {
+    const filename = document.getElementById('gh-filename').value.trim();
+    const title = document.getElementById('gh-title').value.trim();
+    const author = document.getElementById('gh-author').value.trim();
+    const summary = document.getElementById('gh-summary').value.trim();
+
+    // タグを収集（チェックボックス + カスタムタグ）
+    const selectedTags = [];
+    document.querySelectorAll('input[name="gh-tag"]:checked').forEach(cb => {
+      selectedTags.push(cb.value);
+    });
+    const customTags = document.getElementById('gh-custom-tags').value.trim();
+    if (customTags) {
+      customTags.split(',').forEach(tag => {
+        const trimmed = tag.trim();
+        if (trimmed) selectedTags.push(trimmed);
+      });
+    }
 
     // バリデーション
     if (!filename) {
@@ -128,84 +261,63 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // ファイル名のバリデーション: 英数字、ハイフン、アンダースコアのみ
-    var filenameRegex = /^[a-zA-Z0-9_-]+$/;
+    const filenameRegex = /^[a-zA-Z0-9_-]+$/;
     if (!filenameRegex.test(filename)) {
       alert('ファイル名は英数字、ハイフン（-）、アンダースコア（_）のみ使用できます。');
       return;
     }
 
-    if (!title) {
-      alert('タイトルを入力してください。');
+    if (!title || !author || !summary) {
+      alert('タイトル、著者、概要を入力してください。');
       return;
     }
 
-    if (!author) {
-      alert('著者名を入力してください。');
-      return;
-    }
-
-    // タグを取得（推奨タグとカスタムタグを組み合わせる）
-    var selectedTags = [];
-    var checkboxes = document.querySelectorAll('input[name="tag"]:checked');
-    checkboxes.forEach(function(checkbox) {
-      selectedTags.push(checkbox.value);
-    });
-
-    // カスタムタグを取得
-    var customTagsInput = document.getElementById('custom-tags-input').value.trim();
-    if (customTagsInput) {
-      var customTags = customTagsInput.split(',').map(function(tag) {
-        return tag.trim();
-      }).filter(function(tag) {
-        return tag.length > 0;
-      });
-      selectedTags = selectedTags.concat(customTags);
-    }
-
-    // タグがない場合は警告
     if (selectedTags.length === 0) {
       alert('最低1つ以上のタグを選択してください。');
       return;
     }
 
-    // 現在の日付を取得 (YYYY-MM-DD 形式)
-    var now = new Date();
-    var year = now.getFullYear();
-    var month = String(now.getMonth() + 1).padStart(2, '0');
-    var day = String(now.getDate()).padStart(2, '0');
-    var dateStr = year + '-' + month + '-' + day;
-    // 日付時刻 (YYYY-MM-DD HH:MM:SS +0900)
-    var hours = String(now.getHours()).padStart(2, '0');
-    var minutes = String(now.getMinutes()).padStart(2, '0');
-    var seconds = String(now.getSeconds()).padStart(2, '0');
-    var datetimeStr = dateStr + ' ' + hours + ':' + minutes + ':' + seconds + ' +09:00';
+    // 日付生成
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateStr = year + '-' + month + '-' + day;
 
-    // .md 拡張子なしでファイル名を結合
-    var fullFilename = dateStr + '-' + filename + '.md';
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const datetimeStr = dateStr + ' ' + hours + ':' + minutes + ':' + seconds + ' +09:00';
 
-    // タグを YAML 配列形式に変換
-    var tagsYaml = '[' + selectedTags.map(function(tag) {
-      return tag;
-    }).join(', ') + ']';
+    const fullFilename = dateStr + '-' + filename + '.md';
 
-    // Front Matter を生成（日付は記入しない、ボットが自動設定）
-    var frontMatter = '---\n';
+    // Front Matter生成
+    let frontMatter = '---\n';
     frontMatter += 'layout: post\n';
     frontMatter += 'title: ' + title + '\n';
     frontMatter += 'date: ' + datetimeStr + '\n';
     frontMatter += 'author: ' + author + '\n';
-    frontMatter += 'tags: ' + tagsYaml + '\n';
+    frontMatter += 'tags: [' + selectedTags.join(', ') + ']\n';
     frontMatter += 'summary: ' + summary + '\n';
     frontMatter += '---\n\n';
     frontMatter += '## はじめに\n\n';
     frontMatter += 'ここに記事の本文を書いてください。\n';
 
-    // GitHub の Create File URL にリダイレクト
-    var encodedValue = encodeURIComponent(frontMatter);
-    var url = 'https://github.com/Velgail/HSP-Knowledge/new/main/_posts?filename=' + encodeURIComponent(fullFilename) + '&value=' + encodedValue;
+    // GitHubのURL生成
+    const encodedValue = encodeURIComponent(frontMatter);
+    const githubUrl = 'https://github.com/Velgail/HSP-Knowledge/new/main/_posts?filename=' +
+                      encodeURIComponent(fullFilename) + '&value=' + encodedValue;
 
-    window.open(url, '_blank');
+    window.open(githubUrl, '_blank');
   });
 });
 </script>
+
+<div class="help-section">
+  <h3>💡 投稿に関する詳しい情報</h3>
+  <p>
+    記事の書き方、推奨タグ、公開フローなど、詳しい情報は
+    <a href="{{ '/2000/01/01/how-to-post' | relative_url }}">投稿マニュアル</a> をご覧ください。<br>
+    また、記事案を投げたい場合は <a href="https://github.com/Velgail/Hsp-Knowledge/discussions/categories/投稿受付" target="_blank">GitHub Discussions</a> もご利用いただけます。
+  </p>
+</div>

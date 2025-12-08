@@ -53,7 +53,7 @@ title: HSP-Knowledge
         {% endif %}
 
         <p class="post-summary">
-          {{ post.excerpt | strip_html | truncate: 120 }}
+          {{ post.summary | strip_html | truncate: 120 }}
         </p>
       </li>
       {% endfor %}

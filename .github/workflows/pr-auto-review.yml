@@ -40,6 +40,7 @@ jobs:
         run: |
           git fetch origin ${{ github.event.repository.default_branch }}
           git checkout origin/${{ github.event.repository.default_branch }} -- scripts/check_pr.py
+          git checkout origin/${{ github.event.repository.default_branch }} -- scripts/check_author_permission.py
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -49,7 +50,10 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml
 
-      - name: Check Format
+      - name: Check Format and Permissions
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           # 差分取得の比較元を調整
           git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt
@@ -59,6 +63,7 @@ jobs:
 
           has_error=false
           has_files=false
+          has_permission_error=false
 
           while IFS= read -r file; do
             # --- 🛡️ セキュリティチェック追加 ---
@@ -80,13 +85,38 @@ jobs:
             has_files=true
             # ファイルが存在するか確認（削除された場合などのエラー回避）
             if [ -f "$file" ]; then
+              # --- 🔐 編集権限チェック ---
+              python scripts/check_author_permission.py "$file" "$PR_AUTHOR" --base-branch "$BASE_BRANCH" > permission.json || true
+              
+              is_permitted=$(jq -r '.is_permitted' permission.json)
+              is_new_file=$(jq -r '.is_new_file' permission.json)
+              permission_reason=$(jq -r '.reason' permission.json)
+              file_authors=$(jq -r '.file_authors | join(", ")' permission.json)
+              
+              if [ "$is_permitted" != "true" ]; then
+                echo "- ⛔ **$file**: 編集権限がありません" >> report.md
+                echo "  - 理由: $permission_reason" >> report.md
+                if [ -n "$file_authors" ] && [ "$file_authors" != "null" ]; then
+                  echo "  - 編集可能なユーザー: $file_authors" >> report.md
+                fi
+                has_error=true
+                has_permission_error=true
+                continue
+              fi
+              # --- 権限チェック完了 ---
+
+              # 形式チェック
               python scripts/check_pr.py "$file" > result.json
 
               valid=$(jq -r '.is_valid_format' result.json)
               errors=$(jq -r '.issues | join(", ")' result.json)
 
               if [ "$valid" == "true" ]; then
-                echo "- ✅ **$file**: 形式OK" >> report.md
+                if [ "$is_new_file" == "true" ]; then
+                  echo "- ✅ **$file**: 新規作成 - 形式OK" >> report.md
+                else
+                  echo "- ✅ **$file**: 編集（権限確認済み） - 形式OK" >> report.md
+                fi
               else
                 echo "- ❌ **$file**: 形式エラー" >> report.md
                 echo "  - 理由: $errors" >> report.md
@@ -97,6 +127,11 @@ jobs:
 
           if [ "$has_files" = "false" ]; then
             echo "検証対象の記事ファイルが見つかりませんでした。" >> report.md
+          elif [ "$has_permission_error" == "true" ]; then
+            echo "" >> report.md
+            echo "⛔ **編集権限エラー**: 他のユーザーが作成した記事を編集することはできません。" >> report.md
+            echo "" >> report.md
+            echo "> 💡 記事の編集は、その記事を作成した本人（過去にコミットしたことがあるユーザー）のみ可能です。" >> report.md
           elif [ "$has_error" == "true" ]; then
             echo "" >> report.md
             echo "❌ エラーがあるため、修正が必要です。" >> report.md
@@ -217,21 +252,36 @@ jobs:
               core.setFailed('⛔️ Geminiの判定タグが読み取れませんでした。');
             }
 
-      # 3. 形式チェック（念のため再実行）
-      - name: Final Format Check
+      # 3. 形式チェック & 権限チェック（念のため再実行）
+      - name: Final Format and Permission Check
+        id: final-check
         run: |
           # 必要なセットアップ
           # チェックアウトしてmainのスクリプトを復元
           git fetch origin pull/${{ steps.pr.outputs.number }}/head:pr-branch
           git checkout pr-branch
           git checkout origin/${{ github.event.repository.default_branch }} -- scripts/check_pr.py
+          git checkout origin/${{ github.event.repository.default_branch }} -- scripts/check_author_permission.py
           pip install pyyaml
+
+          # PR作成者を取得
+          PR_AUTHOR=$(gh pr view ${{ steps.pr.outputs.number }} --json author -q '.author.login')
+          echo "PR Author: $PR_AUTHOR"
 
           # チェック実行
           git diff --name-only origin/${{ github.event.repository.default_branch }}...HEAD > changed_files.txt
           while IFS= read -r file; do
             if [[ "$file" == _posts/*.md ]] && [[ "$file" != "_posts/template.md" ]]; then
               if [ -f "$file" ]; then
+                # 権限チェック
+                python scripts/check_author_permission.py "$file" "$PR_AUTHOR" --base-branch "${{ github.event.repository.default_branch }}" > permission.json || true
+                if [ "$(jq -r '.is_permitted' permission.json)" != "true" ]; then
+                  echo "Permission denied for $file"
+                  echo "Reason: $(jq -r '.reason' permission.json)"
+                  exit 1
+                fi
+
+                # 形式チェック
                 python scripts/check_pr.py "$file" > result.json
                 if [ "$(jq -r '.is_valid_format' result.json)" != "true" ]; then
                   echo "Format Error in $file"
@@ -240,6 +290,8 @@ jobs:
               fi
             fi
           done < changed_files.txt
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       # 4. Approve & Merge: 先にApproveを行い、その後マージを試行します
       - name: Approve and Merge

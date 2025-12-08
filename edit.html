@@ -1,0 +1,462 @@
+---
+layout: default
+title: 記事を編集
+---
+
+<style>
+.edit-page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.edit-header {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.edit-header h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.edit-file-path {
+  color: #666;
+  font-size: 14px;
+  font-family: monospace;
+}
+
+.edit-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.edit-controls button,
+.edit-controls a {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.save-button {
+  background: #28a745;
+  color: #fff;
+}
+
+.save-button:hover {
+  background: #218838;
+}
+
+.cancel-button {
+  background: #6c757d;
+  color: #fff;
+}
+
+.cancel-button:hover {
+  background: #5a6268;
+  text-decoration: none;
+}
+
+.github-button {
+  background: #24292f;
+  color: #fff;
+}
+
+.github-button:hover {
+  background: #1b1f23;
+  text-decoration: none;
+}
+
+.editor-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.loading-container {
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.loading-spinner {
+  font-size: 48px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.error-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 40px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  text-align: center;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+#editor {
+  min-height: 600px;
+}
+
+/* Toast UI Editor日本語フォント設定 */
+.toastui-editor-defaultUI,
+.toastui-editor-md-container,
+.toastui-editor-ww-container {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif !important;
+}
+
+.toastui-editor-contents {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif !important;
+}
+
+.ProseMirror {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif !important;
+}
+
+.metadata-editor {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+}
+
+.metadata-editor h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #495057;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.metadata-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.metadata-field label {
+  font-size: 12px;
+  font-weight: bold;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.metadata-field input,
+.metadata-field textarea {
+  padding: 8px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.metadata-field input:focus,
+.metadata-field textarea:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+.metadata-field.full-width {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .metadata-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<div class="edit-page-container">
+  <div class="edit-header">
+    <h2>📝 記事を編集</h2>
+    <div class="edit-file-path" id="file-path">読み込み中...</div>
+  </div>
+
+  <div class="edit-controls" id="edit-controls" style="display: none;">
+    <button id="save-button" class="save-button">
+      💾 GitHubで保存
+    </button>
+    <a href="javascript:history.back()" class="cancel-button">
+      ❌ キャンセル
+    </a>
+    <a id="github-direct-button" class="github-button" target="_blank" rel="noopener">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+      GitHubで直接編集
+    </a>
+  </div>
+
+  <div class="loading-container" id="loading-container">
+    <div class="loading-spinner">⏳</div>
+    <p style="margin-top: 16px; color: #666;">Markdownを読み込んでいます...</p>
+  </div>
+
+  <div class="error-container" id="error-container" style="display: none;">
+    <div class="error-message" id="error-message"></div>
+    <p>URLパラメータを確認するか、記事ページから再度お試しください。</p>
+  </div>
+
+  <div class="editor-container" id="editor-container" style="display: none;">
+    <!-- メタデータエディタ -->
+    <div class="metadata-editor">
+      <h3>📋 記事情報</h3>
+      <div class="metadata-grid">
+        <div class="metadata-field">
+          <label for="meta-title">タイトル</label>
+          <input type="text" id="meta-title" placeholder="記事のタイトル">
+        </div>
+        <div class="metadata-field">
+          <label for="meta-author">著者</label>
+          <input type="text" id="meta-author" placeholder="著者名">
+        </div>
+        <div class="metadata-field full-width">
+          <label for="meta-tags">タグ（カンマ区切り）</label>
+          <input type="text" id="meta-tags" placeholder="例: HSP3, C++, ライブラリ">
+        </div>
+        <div class="metadata-field full-width">
+          <label for="meta-summary">概要</label>
+          <textarea id="meta-summary" rows="2" placeholder="記事の概要"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 本文エディタ -->
+    <div id="editor"></div>
+  </div>
+</div>
+
+<!-- Toast UI Editor -->
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  // URLパラメータから記事のパスを取得
+  const urlParams = new URLSearchParams(window.location.search);
+  const articlePath = urlParams.get('path');
+
+  const loadingContainer = document.getElementById('loading-container');
+  const errorContainer = document.getElementById('error-container');
+  const errorMessage = document.getElementById('error-message');
+  const editorContainer = document.getElementById('editor-container');
+  const editControls = document.getElementById('edit-controls');
+  const filePathElement = document.getElementById('file-path');
+  const githubDirectButton = document.getElementById('github-direct-button');
+
+  // パスのバリデーション
+  if (!articlePath) {
+    loadingContainer.style.display = 'none';
+    errorContainer.style.display = 'block';
+    errorMessage.textContent = '⚠️ 記事のパスが指定されていません';
+    filePathElement.textContent = 'エラー';
+    return;
+  }
+
+  // パスを表示
+  filePathElement.textContent = articlePath;
+
+  // GitHubの直接編集リンクを設定
+  githubDirectButton.href = `https://github.com/Velgail/HSP-Knowledge/edit/main/${articlePath}`;
+
+  // GitHubからMarkdownを取得
+  const rawUrl = `https://raw.githubusercontent.com/Velgail/HSP-Knowledge/main/${articlePath}`;
+
+  try {
+    const response = await fetch(rawUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: Markdownの取得に失敗しました`);
+    }
+
+    const fullMarkdown = await response.text();
+
+    // Front Matterと本文を分離
+    const frontMatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+    const match = fullMarkdown.match(frontMatterRegex);
+
+    let metadata = {};
+    let contentOnly = fullMarkdown;
+
+    if (match) {
+      const frontMatterText = match[1];
+      contentOnly = match[2];
+
+      // Front Matterをパース（簡易的な実装）
+      const lines = frontMatterText.split('\n');
+      lines.forEach(line => {
+        const colonIndex = line.indexOf(':');
+        if (colonIndex > 0) {
+          const key = line.substring(0, colonIndex).trim();
+          let value = line.substring(colonIndex + 1).trim();
+
+          // 配列（タグ）の処理
+          if (value.startsWith('[') && value.endsWith(']')) {
+            value = value.slice(1, -1).split(',').map(v => v.trim()).join(', ');
+          }
+
+          metadata[key] = value;
+        }
+      });
+    }
+
+    // メタデータフィールドに値を設定
+    document.getElementById('meta-title').value = metadata.title || '';
+    document.getElementById('meta-author').value = metadata.author || '';
+    document.getElementById('meta-tags').value = metadata.tags || '';
+    document.getElementById('meta-summary').value = metadata.summary || '';
+
+    // 元のメタデータを保存（日付など変更しないフィールド用）
+    window.originalMetadata = metadata;
+
+    // ローディングを非表示、エディタを表示
+    loadingContainer.style.display = 'none';
+    editorContainer.style.display = 'block';
+    editControls.style.display = 'flex';
+
+    // Toast UI Editorを初期化
+    const editor = new toastui.Editor({
+      el: document.querySelector('#editor'),
+      height: '600px',
+      initialEditType: 'wysiwyg', // WYSIWYGモードで開始
+      previewStyle: 'vertical',
+      initialValue: contentOnly,
+      language: 'ja-JP',
+      toolbarItems: [
+        ['heading', 'bold', 'italic', 'strike'],
+        ['hr', 'quote'],
+        ['ul', 'ol', 'task', 'indent', 'outdent'],
+        ['table', 'link', 'image'],
+        ['code', 'codeblock'],
+        ['scrollSync'],
+      ],
+      hooks: {
+        addImageBlobHook: (blob, callback) => {
+          // 画像アップロード機能は無効化（GitHubで直接管理）
+          alert('画像は直接GitHubにアップロードしてください。');
+          callback('', '');
+        }
+      }
+    });
+
+    // 保存ボタンの処理
+    document.getElementById('save-button').addEventListener('click', async function() {
+      const bodyContent = editor.getMarkdown();
+
+      if (!bodyContent.trim()) {
+        alert('本文が空です。');
+        return;
+      }
+
+      // メタデータを取得
+      const title = document.getElementById('meta-title').value.trim();
+      const author = document.getElementById('meta-author').value.trim();
+      const tags = document.getElementById('meta-tags').value.trim();
+      const summary = document.getElementById('meta-summary').value.trim();
+
+      if (!title || !author) {
+        alert('タイトルと著者は必須です。');
+        return;
+      }
+
+      // タグを配列形式に変換
+      const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+      if (tagsArray.length === 0) {
+        alert('最低1つ以上のタグを入力してください。');
+        return;
+      }
+
+      // Front Matterを再構築
+      let frontMatter = '---\n';
+      frontMatter += 'layout: ' + (window.originalMetadata.layout || 'post') + '\n';
+      frontMatter += 'title: ' + title + '\n';
+      frontMatter += 'date: ' + (window.originalMetadata.date || new Date().toISOString()) + '\n';
+      if (window.originalMetadata.lastupdate) {
+        frontMatter += 'lastupdate: ' + window.originalMetadata.lastupdate + '\n';
+      }
+      frontMatter += 'author: ' + author + '\n';
+      frontMatter += 'tags: [' + tagsArray.join(', ') + ']\n';
+      frontMatter += 'summary: ' + summary + '\n';
+      frontMatter += '---\n\n';
+
+      // 完全なMarkdownを生成
+      const fullContent = frontMatter + bodyContent;
+
+      // クリップボードにコピー
+      try {
+        await navigator.clipboard.writeText(fullContent);
+
+        // GitHubの編集ページを開く（コンテンツはクリップボード経由）
+        const githubEditUrl = `https://github.com/Velgail/HSP-Knowledge/edit/main/${articlePath}`;
+
+        // 確認ダイアログ
+        if (confirm('✅ 編集内容をクリップボードにコピーしました！\n\nGitHubの編集ページを開きますので、エディタ内で Ctrl+A（全選択）→ Ctrl+V（ペースト）してください。')) {
+          const newWindow = window.open(githubEditUrl, '_blank');
+
+          // ポップアップブロック対策
+          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+            // ポップアップがブロックされた場合
+            const fallbackLink = document.createElement('a');
+            fallbackLink.href = githubEditUrl;
+            fallbackLink.target = '_blank';
+            fallbackLink.textContent = 'GitHubの編集ページを開く';
+            fallbackLink.style.cssText = 'display: inline-block; padding: 12px 24px; background: #1a73e8; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px;';
+
+            const message = document.createElement('div');
+            message.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 32px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 10000; text-align: center;';
+            message.innerHTML = '<p style="margin: 0 0 16px; font-size: 16px;">⚠️ ポップアップがブロックされました</p><p style="margin: 0 0 16px; color: #666;">以下のリンクをクリックしてGitHubを開いてください</p>';
+            message.appendChild(fallbackLink);
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999;';
+            overlay.onclick = function() {
+              document.body.removeChild(overlay);
+              document.body.removeChild(message);
+            };
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(message);
+          }
+        }
+      } catch (err) {
+        alert('⚠️ クリップボードへのコピーに失敗しました。\nブラウザの設定を確認してください。\n\nエラー: ' + err.message);
+        console.error('クリップボードエラー:', err);
+      }
+    });
+
+  } catch (error) {
+    loadingContainer.style.display = 'none';
+    errorContainer.style.display = 'block';
+    errorMessage.textContent = `⚠️ ${error.message}`;
+    console.error('Markdown取得エラー:', error);
+  }
+});
+</script>
