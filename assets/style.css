@@ -437,6 +437,28 @@ a:hover {
   text-decoration: underline;
 }
 
+/* 編集ボタン */
+.post-edit-controls {
+  margin-bottom: 12px;
+  text-align: right;
+}
+
+.edit-button {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #1a73e8;
+  color: #fff;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.edit-button:hover {
+  background: #1558ad;
+  text-decoration: none;
+}
+
 /* レスポンシブデザイン */
 @media (max-width: 768px) {
   .layout-main {
