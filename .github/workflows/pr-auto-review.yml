@@ -51,8 +51,22 @@ jobs:
 
       - name: Check Format
         run: |
+          # デバッグ: シェルの動作を確認
+          set -x  # コマンドをエコー
+
+          # 必要なツールの確認
+          echo "=== Tool versions ==="
+          jq --version || echo "ERROR: jq not found"
+          python --version || echo "ERROR: python not found"
+          echo "===================="
+
           # 差分取得の比較元を調整
           git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt
+
+          # デバッグ: 変更されたファイルを表示
+          echo "=== Changed files ==="
+          cat changed_files.txt
+          echo "=== End of changed files ==="
 
           echo "## 📝 形式チェック結果" > report.md
           echo "" >> report.md
@@ -80,10 +94,25 @@ jobs:
             has_files=true
             # ファイルが存在するか確認（削除された場合などのエラー回避）
             if [ -f "$file" ]; then
-              python scripts/check_pr.py "$file" > result.json
+              echo "=== Checking file: $file ==="
+              python scripts/check_pr.py "$file" > result.json || {
+                echo "ERROR: check_pr.py failed for $file"
+                cat result.json || echo "result.json not created"
+                exit 1
+              }
 
-              valid=$(jq -r '.is_valid_format' result.json)
-              errors=$(jq -r '.issues | join(", ")' result.json)
+              echo "=== result.json content ==="
+              cat result.json
+              echo "=== end result.json ==="
+
+              valid=$(jq -r '.is_valid_format' result.json) || {
+                echo "ERROR: jq failed to parse result.json"
+                exit 1
+              }
+              errors=$(jq -r '.issues | join(", ")' result.json) || {
+                echo "ERROR: jq failed to extract issues"
+                exit 1
+              }
 
               if [ "$valid" == "true" ]; then
                 echo "- ✅ **$file**: 形式OK" >> report.md
@@ -93,7 +122,7 @@ jobs:
                 has_error=true
               fi
             fi
-          done < changed_files.txt
+          done < changed_files.txt || true  # read の終了コードを無視
 
           if [ "$has_files" = "false" ]; then
             echo "検証対象の記事ファイルが見つかりませんでした。" >> report.md

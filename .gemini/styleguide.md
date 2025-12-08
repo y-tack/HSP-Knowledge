@@ -34,7 +34,7 @@ HSP-Knowledge は、HSP（Hot Soup Processor）に関する知識を共有する
 
 2. **基本形式**
    - Front Matter（YAML）が正しく記述されている
-   - 必須フィールド（title, date, author, tags, summary）が存在する
+   - 必須フィールド（title, author, tags, summary）が存在する
    - ファイル名が `YYYY-MM-DD-title.md` 形式である
    - テンプレートファイル名（`-new-article.md`等）でない
 
