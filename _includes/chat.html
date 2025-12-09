@@ -1,0 +1,11 @@
+<div class="chat-box">
+  <div class="chat-face">
+    <img src="{{ include.face }}" alt="{{ include.name }}">
+    <div class="chat-name">{{ include.name }}</div>
+  </div>
+  <div class="chat-content">
+    <div class="chat-text {{ include.color }}">
+      {{ include.text | markdownify }}
+    </div>
+  </div>
+</div>
