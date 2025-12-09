@@ -44,7 +44,8 @@ layout: default
         <ul class="tag-list">
           {% for tag in page.tags %}
           <li class="tag-item">
-            <a href="{{ '/?tag=' | append: tag | relative_url }}">{{ tag }}</a>
+            {% assign encoded_tag = tag | url_encode %}
+            <a href="{{ '/?tag=' | append: encoded_tag | relative_url }}">{{ tag }}</a>
           </li>
           {% endfor %}
         </ul>
